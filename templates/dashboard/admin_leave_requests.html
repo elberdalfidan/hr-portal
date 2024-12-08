@@ -10,6 +10,18 @@
         </div>
 
         <div class="card mb-4">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Leave Requests</h5>
+                <button type="button" 
+                        class="btn btn-primary" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#adminCreateModal">
+                    <i class="bi bi-plus-lg me-2"></i>Create Leave
+                </button>
+            </div>
+        </div>
+
+        <div class="card mb-4">
             <div class="card-body">
                 <form id="filterForm" class="row g-3">
                     <div class="col-md-3">
@@ -124,6 +136,54 @@
         </div>
     </div>
 </div>
+<!-- Admin Create Leave Modal -->
+<div class="modal fade" id="adminCreateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Leave for Employee</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="adminCreateForm">
+                    <div class="mb-3">
+                        <label class="form-label">Employee</label>
+                        <select class="form-select" name="employee_id" required>
+                            <option value="">Select Employee</option>
+                            {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.get_full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Leave Type</label>
+                        <select class="form-select" name="leave_type" required>
+                            <option value="ANNUAL">Annual Leave</option>
+                            <option value="SICK">Sick Leave</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" class="form-control" name="start_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">End Date</label>
+                        <input type="date" class="form-control" name="end_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reason</label>
+                        <textarea class="form-control" name="reason" rows="3" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitAdminCreate()">Create</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -177,6 +237,57 @@ async function submitResponse() {
         alert('An error occurred during the process');
     }
 }
+
+async function submitAdminCreate() {
+    const form = document.getElementById('adminCreateForm');
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('/api/leave-requests/admin_create/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(Object.fromEntries(formData))
+        });
+
+        if (response.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('adminCreateModal')).hide();
+            window.location.reload();
+        } else {
+            const data = await response.json();
+            alert(data.error || 'An error occurred while creating the leave request');
+        }
+    } catch (error) {
+        console.error('Admin create error:', error);
+        alert('An error occurred while creating the leave request');
+    }
+}
+
+async function loadEmployees() {
+    try {
+        const response = await fetch('/api/employees/');
+        if (response.ok) {
+            const employees = await response.json();
+            const select = document.querySelector('select[name="employee_id"]');
+            
+            employees.forEach(employee => {
+                const option = document.createElement('option');
+                option.value = employee.id;
+                option.textContent = `${employee.first_name} ${employee.last_name}`;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading employees:', error);
+    }
+}
+
+document.getElementById('adminCreateModal').addEventListener('show.bs.modal', function () {
+    loadEmployees();
+});
+
 </script>
 {% endblock %}
 

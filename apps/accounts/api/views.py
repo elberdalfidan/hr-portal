@@ -3,9 +3,13 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import get_user_model
 from .serializers import UserLoginSerializer, UserSerializer
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from apps.attendance.services.attendance import AttendanceService
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAdminUser
+User = get_user_model()
 
 class StaffLoginAPIView(APIView):
     permission_classes = [AllowAny]
@@ -140,3 +144,11 @@ class LogoutAPIView(APIView):
         logout(request)
         return Response({'status': 'success'})
 
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def get_employees(request):
+    employees = User.objects.filter(
+        is_active=True,
+        is_staff=True
+    ).values('id', 'first_name', 'last_name')
+    return Response(list(employees))

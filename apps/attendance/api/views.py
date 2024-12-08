@@ -12,6 +12,7 @@ from .serializers import (
     LeaveRequestUpdateSerializer,
     MonthlyReportSerializer
 )
+from django.contrib.auth.models import User
 
 class AttendanceViewSet(viewsets.ModelViewSet):
     serializer_class = AttendanceSerializer
@@ -124,3 +125,38 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
             return Response({'status': 'rejected'})
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['post'])
+    def admin_create(self, request):
+        """Admin creates leave request for employee"""
+        if not request.user.is_superuser:
+            return Response(
+                {'error': 'Permission denied'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = LeaveRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            try:
+                employee_user = User.objects.get(id=request.data.get('employee_id'))
+                leave_request = LeaveRequestService.create_admin_request(
+                    admin_user=request.user,
+                    employee_user=employee_user,
+                    data=serializer.validated_data
+                )
+                return Response(
+                    LeaveRequestSerializer(leave_request).data,
+                    status=status.HTTP_201_CREATED
+                )
+            except (User.DoesNotExist, ValueError) as e:
+                return Response(
+                    {'error': str(e)},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        
+        # Get first error message
+        error_message = next(iter(serializer.errors.values()))[0] if serializer.errors else "Invalid data"
+        return Response(
+            {'error': error_message},
+            status=status.HTTP_400_BAD_REQUEST
+        )

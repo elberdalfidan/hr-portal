@@ -88,3 +88,56 @@ class LeaveRequestService:
             action=action,
             note=note
         )
+
+    @staticmethod
+    def create_admin_request(admin_user, employee_user, data):
+        """Admin creates leave request for employee"""
+        if not admin_user.is_superuser:
+            raise ValueError("Only admin users can create leave requests for employees")
+
+        # Calculate working days
+        requested_days = LeaveRequestService._calculate_working_days(
+            data['start_date'],
+            data['end_date']
+        )
+
+        # Get employee record
+        try:
+            employee = Employee.objects.get(user=employee_user)
+        except Employee.DoesNotExist:
+            raise ValueError("Employee record not found")
+
+        # Check leave balance for annual leave
+        if data['leave_type'] == 'ANNUAL':
+            if employee.remaining_leave_days < requested_days:
+                raise ValueError(
+                    f"Insufficient leave days. Available: {employee.remaining_leave_days} days, "
+                    f"Requested: {requested_days} days"
+                )
+
+        # Create pre-approved leave request
+        leave_request = LeaveRequest.objects.create(
+            user=employee_user,
+            start_date=data['start_date'],
+            end_date=data['end_date'],
+            leave_type=data['leave_type'],
+            reason=data['reason'],
+            requested_days=requested_days,
+            status='APPROVED',
+            approved_by=admin_user,
+            response_note=f"Created by admin {admin_user.first_name} {admin_user.last_name}"
+        )
+
+        # Update leave balance for annual leave
+        if data['leave_type'] == 'ANNUAL':
+            employee.remaining_leave_days -= requested_days
+            employee.save()
+
+        # Send notification to employee
+        NotificationService.send_leave_response_notification(
+            leave_request=leave_request,
+            action='APPROVED',
+            note="Created by admin"
+        )
+
+        return leave_request
