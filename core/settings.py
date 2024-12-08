@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'apps.accounts',
     'apps.attendance',
     'apps.notifications',
+    'apps.dashboard',
 
     # Third Party
     'rest_framework',

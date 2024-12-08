@@ -72,7 +72,7 @@
             
             if (response.ok) {
                 localStorage.setItem('user', JSON.stringify(data.user));
-                window.location.href = '/admin-dashboard/';
+                window.location.href = '/dashboard/';
             } else {
                 errorMessage.textContent = data.message || 'Login failed';
                 errorMessage.style.display = 'block';
