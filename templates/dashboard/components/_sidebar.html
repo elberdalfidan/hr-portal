@@ -1,0 +1,41 @@
+<div class="d-none d-md-flex flex-shrink-0 bg-white border-end" style="width: 280px;">
+    <div class="w-100 py-4">
+        <div class="d-flex flex-column h-100">
+            <nav class="nav flex-column">
+                <a href="{% url 'dashboard:index' %}" 
+                   class="nav-link d-flex align-items-center text-dark py-3 px-3">
+                    <i class="bi bi-house-door me-3"></i>
+                    Home
+                </a>
+
+                <a href="" 
+                   class="nav-link d-flex align-items-center text-dark py-3 px-3">
+                    <i class="bi bi-clock-history me-3"></i>
+                    Login/Logout Records
+                </a>
+                {% if not user.is_superuser %}
+                <a href="{% url 'dashboard:leave_requests' %}" 
+                   class="nav-link d-flex align-items-center text-dark py-3 px-3">
+                    <i class="bi bi-calendar-check me-3"></i>
+                        My Leave Requests
+                    </a>
+                {% else %}
+                <a href="{% url 'dashboard:admin_leave_requests' %}" 
+                   class="nav-link d-flex align-items-center text-dark py-3 px-3">
+                    <i class="bi bi-calendar-check me-3"></i>
+                    All Leave Requests
+                </a>
+                {% endif %}
+                
+
+                {% if user.is_superuser %}
+                <a href="" 
+                   class="nav-link d-flex align-items-center text-dark py-3 px-3">
+                    <i class="bi bi-graph-up me-3"></i>
+                    Reports
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+    </div>
+</div>

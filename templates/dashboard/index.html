@@ -4,100 +4,12 @@
 {% block content %}
 <div class="d-flex vh-100">
     <!-- Sidebar -->
-    <div class="d-none d-md-flex flex-shrink-0 bg-white border-end" style="width: 280px;">
-        <div class="w-100 py-4">
-            <div class="d-flex flex-column h-100">
-                <nav class="nav flex-column">
-                    <a href="{% url 'dashboard:index' %}" 
-                       class="nav-link d-flex align-items-center text-dark py-3 px-3">
-                        <i class="bi bi-house-door me-3"></i>
-                        Home
-                    </a>
-
-                    <a href="" 
-                       class="nav-link d-flex align-items-center text-dark py-3 px-3">
-                        <i class="bi bi-clock-history me-3"></i>
-                        Login/Logout Records
-                    </a>
-
-                    <a href="" 
-                       class="nav-link d-flex align-items-center text-dark py-3 px-3">
-                        <i class="bi bi-calendar-check me-3"></i>
-                        Leave Requests
-                    </a>
-
-                    {% if user.is_superuser %}
-                    <a href="" 
-                       class="nav-link d-flex align-items-center text-dark py-3 px-3">
-                        <i class="bi bi-graph-up me-3"></i>
-                        Reports
-                    </a>
-                    {% endif %}
-                </nav>
-            </div>
-        </div>
-    </div>
+    {% include 'dashboard/components/_sidebar.html' %}
 
     <!-- Main content -->
     <div class="flex-grow-1 d-flex flex-column overflow-hidden">
         <!-- Top header -->
-        <header class="bg-white border-bottom px-4 py-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <h1 class="h4 mb-0">Dashboard</h1>
-                
-                <div class="d-flex align-items-center gap-3">
-                    <!-- Notifications Dropdown -->
-                    <div class="dropdown">
-                        <button class="btn btn-link text-dark position-relative p-0" 
-                                data-bs-toggle="dropdown">
-                            <i class="bi bi-bell fs-5"></i>
-                            {% if unread_notifications_count > 0 %}
-                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                {{ unread_notifications_count }}
-                            </span>
-                            {% endif %}
-                        </button>
-                        <div class="dropdown-menu dropdown-menu-end shadow" style="width: 300px;">
-                            {% for notification in recent_notifications %}
-                            <div class="dropdown-item py-2">
-                                <p class="mb-0 small">{{ notification.message }}</p>
-                                <small class="text-muted">{{ notification.created_at|timesince }} önce</small>
-                            </div>
-                            {% empty %}
-                            <div class="dropdown-item py-2">
-                                <p class="mb-0 small">No notifications yet</p>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-
-                    <!-- Profile Dropdown -->
-                    <div class="dropdown">
-                        <button class="btn btn-link p-0" data-bs-toggle="dropdown">
-                            <div class="d-flex align-items-center">
-                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 
-                                     style="width: 35px; height: 35px;">
-                                    {{ user.first_name|first }}{{ user.last_name|first }}
-                                </div>
-                            </div>
-                        </button>
-                        <div class="dropdown-menu dropdown-menu-end shadow">
-                            <div class="px-3 py-2">
-                                <p class="mb-0 fw-medium">{{ user.get_full_name }}</p>
-                                <small class="text-muted">{{ user.email }}</small>
-                            </div>
-                            <div class="dropdown-divider"></div>
-                            <a href="" class="dropdown-item">
-                                <i class="bi bi-person me-2"></i> Profile
-                            </a>
-                            <button onclick="handleLogout()" class="dropdown-item text-danger">
-                                <i class="bi bi-box-arrow-right me-2"></i> Logout
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </header>
+        {% include 'dashboard/components/_topheader.html' %}
 
         <!-- Main content area -->
         <main class="flex-grow-1 overflow-auto bg-light">
@@ -227,27 +139,7 @@
     };
 
 
-    async function handleLogout() {
-        try {
-            const response = await fetch('{% url "accounts:logout_api" %}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
-                    'Content-Type': 'application/json',
-                },
-            });
 
-            if (response.ok) {
-                window.location.href = '{% url "accounts:staff_login" %}';
-            } else {
-                const data = await response.json();
-                alert(data.message || 'Logging out failed');
-            }
-        } catch (error) {
-            console.error('Logout error:', error);
-            alert('Logging out failed');
-        }
-    }
 </script>
 
 

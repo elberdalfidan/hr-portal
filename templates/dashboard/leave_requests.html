@@ -1,0 +1,156 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex vh-100">
+    {% include 'dashboard/components/_sidebar.html' %}
+    <div class="flex-grow-1 d-flex flex-column overflow-hidden">
+        {% include 'dashboard/components/_topheader.html' %}
+        <div class="d-flex justify-content-between align-items-center mb-4 px-4 mt-4">
+            <h2>My Leave Requests</h2>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#leaveRequestModal">
+                <i class="bi bi-plus-circle me-2"></i>New Leave Request
+            </button>
+        </div>
+        <!-- Leave Requests Table -->
+        <div class="card mx-4">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Request Date</th>
+                                <th>Leave Type</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Days</th>
+                                <th>Status</th>
+                                <th>Response</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in leave_requests %}
+                            <tr>
+                                <td>{{ request.created_at|date:"d.m.Y H:i" }}</td>
+                                <td>{{ request.get_leave_type_display }}</td>
+                                <td>{{ request.start_date|date:"d.m.Y" }}</td>
+                                <td>{{ request.end_date|date:"d.m.Y" }}</td>
+                                <td>{{ request.requested_days }}</td>
+                                <td>
+                                    {% if request.status == 'PENDING' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif request.status == 'APPROVED' %}
+                                        <span class="badge bg-success">Approved</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if request.response_note %}
+                                        <button type="button" class="btn btn-sm btn-outline-info" 
+                                                data-bs-toggle="tooltip" 
+                                                title="{{ request.response_note }}">
+                                            <i class="bi bi-info-circle"></i>
+                                        </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center py-4">
+                                    You have no leave requests yet.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- Request Leave Modal -->
+    <div class="modal fade" id="leaveRequestModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">New Leave Request</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="leaveRequestForm">
+                        <div class="mb-3">
+                            <label class="form-label">Leave Type</label>
+                            <select class="form-select" name="leave_type" required>
+                                <option value="ANNUAL">Annual Leave</option>
+                                <option value="SICK">Sick Leave</option>
+                                <option value="OTHER">Other</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" class="form-control" name="start_date" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">End Date</label>
+                            <input type="date" class="form-control" name="end_date" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" name="reason" rows="3" required></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" class="btn btn-primary" onclick="submitLeaveRequest()">Gönder</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+// Activate tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+})
+
+async function submitLeaveRequest() {
+    const form = document.getElementById('leaveRequestForm');
+    const formData = new FormData(form);
+    
+    try {
+        const response = await fetch('/api/leave-requests/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify(Object.fromEntries(formData))
+        });
+
+        if (response.ok) {
+            // Close the modal
+            bootstrap.Modal.getInstance(document.getElementById('leaveRequestModal')).hide();
+            // Reload the page
+            window.location.reload();
+        } else {
+            const data = await response.json();
+            alert(data.message || 'An error occurred while creating the leave request');
+        }
+    } catch (error) {
+        console.error('Leave request error:', error);
+        alert('An error occurred while creating the leave request');
+    }
+}
+
+// Date validation
+document.querySelector('input[name="end_date"]').addEventListener('change', function() {
+    const startDate = document.querySelector('input[name="start_date"]').value;
+    if (startDate && this.value < startDate) {
+        alert('End date cannot be before start date');
+        this.value = startDate;
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex vh-100">
+    {% include 'dashboard/components/_sidebar.html' %}
+    <div class="flex-grow-1 d-flex flex-column overflow-hidden">
+        {% include 'dashboard/components/_topheader.html' %}
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Leave Request Management</h2>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <form id="filterForm" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-select" name="status" onchange="this.form.submit()">
+                            <option value="">All</option>
+                            <option value="PENDING" {% if request.GET.status == 'PENDING' %}selected{% endif %}>Pending</option>
+                            <option value="APPROVED" {% if request.GET.status == 'APPROVED' %}selected{% endif %}>Approved</option>
+                            <option value="REJECTED" {% if request.GET.status == 'REJECTED' %}selected{% endif %}>Rejected</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Request Date</th>
+                                <th>Leave Type</th>
+                                <th>Start Date</th>
+                                <th>End Date</th>
+                                <th>Days</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in leave_requests %}
+                            <tr>
+                                <td>{{ request.user.get_full_name }}</td>
+                                <td>{{ request.created_at|date:"d.m.Y H:i" }}</td>
+                                <td>{{ request.get_leave_type_display }}</td>
+                                <td>{{ request.start_date|date:"d.m.Y" }}</td>
+                                <td>{{ request.end_date|date:"d.m.Y" }}</td>
+                                <td>{{ request.requested_days }}</td>
+                                <td>
+                                    {% if request.status == 'PENDING' %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% elif request.status == 'APPROVED' %}
+                                        <span class="badge bg-success">Approved</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Rejected</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if request.status == 'PENDING' %}
+                                    <div class="btn-group">
+                                        <button type="button" 
+                                                class="btn btn-sm btn-success" 
+                                                onclick="showResponseModal('{{ request.id }}', 'approve')">
+                                            Approve
+                                        </button>
+                                        <button type="button" 
+                                                class="btn btn-sm btn-danger" 
+                                                onclick="showResponseModal('{{ request.id }}', 'reject')">
+                                            Reject
+                                        </button>
+                                    </div>
+                                    {% else %}
+                                        {% if request.response_note %}
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-info" 
+                                                data-bs-toggle="tooltip" 
+                                                title="{{ request.response_note }}">
+                                            <i class="bi bi-info-circle"></i>
+                                        </button>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center py-4">
+                                    No leave request found.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Response Modal -->
+<div class="modal fade" id="responseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Leave Request Response</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="responseForm">
+                    <input type="hidden" id="leaveRequestId">
+                    <input type="hidden" id="actionType">
+                    <div class="mb-3">
+                        <label class="form-label">Note</label>
+                        <textarea class="form-control" id="responseNote" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitResponse()">Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Activate tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+})
+
+function showResponseModal(requestId, action) {
+    document.getElementById('leaveRequestId').value = requestId;
+    document.getElementById('actionType').value = action;
+    
+    // Update modal title
+    const title = action === 'approve' ? 'Approve Leave Request' : 'Reject Leave Request';
+    document.querySelector('#responseModal .modal-title').textContent = title;
+    
+    // Show modal
+    new bootstrap.Modal(document.getElementById('responseModal')).show();
+}
+
+async function submitResponse() {
+    const requestId = document.getElementById('leaveRequestId').value;
+    const action = document.getElementById('actionType').value;
+    const note = document.getElementById('responseNote').value;
+    
+    try {
+        const response = await fetch(`/api/leave-requests/${requestId}/${action}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                response_note: note
+            })
+        });
+
+        if (response.ok) {
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('responseModal')).hide();
+            // Reload page
+            window.location.reload();
+        } else {
+            const data = await response.json();
+            alert(data.message || 'An error occurred during the process');
+        }
+    } catch (error) {
+        console.error('Response error:', error);
+        alert('An error occurred during the process');
+    }
+}
+</script>
+{% endblock %}
+
+

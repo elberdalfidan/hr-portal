@@ -23,7 +23,45 @@ class LeaveRequestSerializer(serializers.ModelSerializer):
             'leave_type', 'reason', 'status', 'status_display',
             'requested_days', 'response_note', 'created_at'
         ]
-        read_only_fields = ['status', 'response_note']
+        read_only_fields = [
+            'user', 'status', 'response_note', 'requested_days',
+            'user_name', 'status_display'
+        ]
+
+    def validate(self, data):
+        """
+        Validate start and end dates and calculate days
+        """
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+
+        if start_date and end_date:
+            if start_date > end_date:
+                raise serializers.ValidationError({
+                    "end_date": "End date cannot be before start date."
+                })
+            
+            # Calculate days
+            days = (end_date - start_date).days + 1
+            if days < 1:
+                raise serializers.ValidationError({
+                    "end_date": "At least 1 day leave must be requested."
+                })
+            
+            # Add calculated days to data
+            data['requested_days'] = days
+
+        return data
+
+    def create(self, validated_data):
+        """
+        Add user info automatically with create method
+        """
+        # Get user info from request
+        user = self.context['request'].user
+        validated_data['user'] = user
+        
+        return super().create(validated_data)
 
 class LeaveRequestUpdateSerializer(serializers.ModelSerializer):
     class Meta:

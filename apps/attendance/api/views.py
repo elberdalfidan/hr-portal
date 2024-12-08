@@ -56,6 +56,13 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
     serializer_class = LeaveRequestSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_serializer_context(self):
+        """
+        Serializer context for the current request
+        """
+        context = super().get_serializer_context()
+        return context
+
     def get_queryset(self):
         user = self.request.user
         if user.is_superuser:
@@ -80,13 +87,19 @@ class LeaveRequestViewSet(viewsets.ModelViewSet):
         serializer = LeaveRequestUpdateSerializer(data=request.data)
         
         if serializer.is_valid():
-            LeaveRequestService.process_request(
-                leave_request=leave_request,
-                admin_user=request.user,
-                action='APPROVED',
-                note=serializer.validated_data.get('response_note')
-            )
-            return Response({'status': 'approved'})
+            try:
+                LeaveRequestService.process_request(
+                    leave_request=leave_request,
+                    admin_user=request.user,
+                    action='APPROVED',
+                    note=serializer.validated_data.get('response_note')
+                )
+                return Response({'status': 'approved'})
+            except ValueError as e:
+                return Response(
+                    {'error': str(e)},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
