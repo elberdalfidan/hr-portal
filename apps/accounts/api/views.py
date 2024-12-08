@@ -5,6 +5,7 @@ from rest_framework.permissions import AllowAny
 from django.contrib.auth import authenticate, login, logout
 from .serializers import UserLoginSerializer, UserSerializer
 from drf_spectacular.utils import extend_schema, OpenApiResponse
+from apps.attendance.services.attendance import AttendanceService
 
 class StaffLoginAPIView(APIView):
     permission_classes = [AllowAny]
@@ -48,6 +49,10 @@ class StaffLoginAPIView(APIView):
 
             if user and user.is_staff and not user.is_superuser:
                 login(request, user)
+
+                # Save login record
+                AttendanceService.handle_login(user)
+
                 return Response({
                     'status': 'success',
                     'user': UserSerializer(user).data
@@ -131,6 +136,7 @@ class LogoutAPIView(APIView):
         }
     )
     def post(self, request):
+        AttendanceService.handle_logout(request.user)
         logout(request)
         return Response({'status': 'success'})
 

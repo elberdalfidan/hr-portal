@@ -31,7 +31,10 @@ class Attendance(models.Model):
         if not self.first_login:
             return 0
         
-        expected_time = datetime.combine(self.date, time(8,0))
+        # Timezone aware expected_time
+        expected_time = timezone.make_aware(
+            datetime.combine(self.date, time(8, 0))
+        )
         actual_time = self.first_login
 
         if actual_time <= expected_time:
@@ -39,7 +42,7 @@ class Attendance(models.Model):
         
         late_duration = actual_time - expected_time
         late_hours = late_duration.total_seconds() / 3600
-        return round(late_hours / 10, 2)
+        return round(late_hours / 10, 2)  # 10 hours = 1 day
     
 class LeaveRequest(models.Model):
     STATUS_CHOICES = (
