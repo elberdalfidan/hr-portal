@@ -1,0 +1,2 @@
+-r base.txt
+faker==33.1.0

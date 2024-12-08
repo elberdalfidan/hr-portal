@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Login - HR Portal{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-card {
+        border-top: 5px solid #dc3545;
+    }
+    .btn-login {
+        background-color: #dc3545;
+        border-color: #dc3545;
+    }
+    .btn-login:hover {
+        background-color: #c82333;
+        border-color: #bd2130;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container login-container">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card login-card">
+                <div class="login-header">
+                    <h2 class="text-danger mb-0">Admin Login</h2>
+                    <small class="text-muted">Management Access Only</small>
+                </div>
+                <div class="login-body">
+                    <form id="loginForm" onsubmit="handleLogin(event)">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-login text-white">Login as Admin</button>
+                        </div>
+                        <div id="errorMessage" class="error-message"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    async function handleLogin(event) {
+        event.preventDefault();
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const errorMessage = document.getElementById('errorMessage');
+        
+        try {
+            const response = await fetch('/api/admin/login/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({ username, password })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                localStorage.setItem('user', JSON.stringify(data.user));
+                window.location.href = '/admin-dashboard/';
+            } else {
+                errorMessage.textContent = data.message || 'Login failed';
+                errorMessage.style.display = 'block';
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            errorMessage.textContent = 'An error occurred. Please try again.';
+            errorMessage.style.display = 'block';
+        }
+    }
+</script>
+{% endblock %}
