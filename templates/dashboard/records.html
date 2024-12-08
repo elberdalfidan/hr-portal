@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex vh-100">
+    {% include 'dashboard/components/_sidebar.html' %}
+    <div class="flex-grow-1 d-flex flex-column">
+        {% include 'dashboard/components/_topheader.html' %}
+        
+        <div class="flex-grow-1 overflow-auto">
+            <div class="container-fluid py-4">
+                <!-- Filters -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <form class="row g-3 align-items-end" method="get">
+                            {% if is_admin %}
+                            <div class="col-md-3">
+                                <label class="form-label">Employee</label>
+                                <select name="user" class="form-select" onchange="this.form.submit()">
+                                    <option value="">All Employees</option>
+                                    {% for user in users %}
+                                    <option value="{{ user.id }}" {% if user.id == selected_user_id %}selected{% endif %}>
+                                        {{ user.get_full_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            {% endif %}
+                            <div class="col-md-2">
+                                <label class="form-label">Month</label>
+                                <select name="month" class="form-select" onchange="this.form.submit()">
+                                    {% for month_num, month_name in months %}
+                                    <option value="{{ month_num }}" {% if month_num == current_month %}selected{% endif %}>
+                                        {{ month_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Year</label>
+                                <select name="year" class="form-select" onchange="this.form.submit()">
+                                    {% for year in years %}
+                                    <option value="{{ year }}" {% if year == current_year %}selected{% endif %}>
+                                        {{ year }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {% if is_admin and all_reports %}
+                <!-- All Users Summary Cards -->
+                <div class="row g-4 mb-4">
+                    {% for user, report in all_reports.items %}
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ user.get_full_name }}</h5>
+                                <div class="row g-3 mt-2">
+                                    <div class="col-6">
+                                        <div class="border rounded p-2">
+                                            <small class="text-muted d-block">Total Work</small>
+                                            <strong>{{ report.total_work_hours }} hours</strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="border rounded p-2">
+                                            <small class="text-muted d-block">Average Daily</small>
+                                            <strong>{{ report.average_daily_hours }} hours</strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="border rounded p-2">
+                                            <small class="text-muted d-block">Late Days</small>
+                                            <strong>{{ report.late_days }} days</strong>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="border rounded p-2">
+                                            <small class="text-muted d-block">Deducted Leave</small>
+                                            <strong>{{ report.total_deducted_leave }} days</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                {% if monthly_report %}
+                <!-- Selected User/Personal Summary -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Monthly Summary</h5>
+                        <div class="row g-4">
+                            <div class="col-md-3">
+                                <div class="border rounded p-3">
+                                    <h6 class="text-muted mb-2">Total Work</h6>
+                                    <h4 class="mb-0">{{ monthly_report.total_work_hours }} hours</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border rounded p-3">
+                                    <h6 class="text-muted mb-2">Average Daily</h6>
+                                    <h4 class="mb-0">{{ monthly_report.average_daily_hours }} hours</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border rounded p-3">
+                                    <h6 class="text-muted mb-2">Late Days</h6>
+                                    <h4 class="mb-0">{{ monthly_report.late_days }} days</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="border rounded p-3">
+                                    <h6 class="text-muted mb-2">Deducted Leave</h6>
+                                    <h4 class="mb-0">{{ monthly_report.total_deducted_leave }} days</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Kayıtlar Tablosu -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        {% if is_admin %}
+                                        <th>Employee</th>
+                                        {% endif %}
+                                        <th>Date</th>
+                                        <th>First Login</th>
+                                        <th>Last Logout</th>
+                                        <th>Late (minutes)</th>
+                                        <th>Deducted Leave</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in attendance_records %}
+                                    <tr>
+                                        {% if is_admin %}
+                                        <td>{{ record.user.get_full_name }}</td>
+                                        {% endif %}
+                                        <td>{{ record.date|date:"d.m.Y" }}</td>
+                                        <td>{{ record.first_login|time:"H:i" }}</td>
+                                        <td>{{ record.last_logout|time:"H:i" }}</td>
+                                        <td>
+                                            {% if record.late_minutes > 0 %}
+                                                <span class="text-danger">{{ record.late_minutes }} dk</span>
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if record.deducted_leave > 0 %}
+                                                <span class="text-danger">{{ record.deducted_leave }} gün</span>
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if not record.first_login %}
+                                                <span class="badge bg-danger">Login Not Found</span>
+                                            {% elif not record.last_logout %}
+                                                <span class="badge bg-warning">Logout Not Found</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="{% if is_admin %}7{% else %}6{% endif %}" class="text-center py-4">
+                                            No records found for this month.
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

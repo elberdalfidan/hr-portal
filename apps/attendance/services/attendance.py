@@ -1,5 +1,5 @@
 from django.utils import timezone
-from django.db.models import F
+from django.db.models import F, ExpressionWrapper, fields, Count, Case, When, Sum
 from datetime import datetime, time
 from ..models import Attendance
 from apps.notifications.services.notification import NotificationService
@@ -67,8 +67,45 @@ class AttendanceService:
     @staticmethod
     def get_monthly_report(user, year, month):
         """Monthly attendance report"""
-        return Attendance.objects.filter(
+        records = Attendance.objects.filter(
             user=user,
             date__year=year,
             date__month=month
-        ).order_by('date')
+        )
+        
+        # Work hours calculation
+        work_hours = records.annotate(
+            work_duration=ExpressionWrapper(
+                F('last_logout') - F('first_login'),
+                output_field=fields.DurationField()
+            )
+        ).aggregate(
+            total_days=Count('id'),
+            present_days=Count(Case(When(first_login__isnull=False, then=1))),
+            absent_days=Count(Case(When(first_login__isnull=True, then=1))),
+            late_days=Count(Case(When(late_minutes__gt=0, then=1))),
+            total_late_minutes=Sum('late_minutes'),
+            total_work_hours=Sum('work_duration', output_field=fields.DurationField()),
+            total_deducted_leave=Sum('deducted_leave')
+        )
+        
+        # None values to 0
+        work_hours = {k: v or 0 for k, v in work_hours.items()}
+        
+        # Convert total work hours to hours
+        if work_hours['total_work_hours']:
+            total_hours = work_hours['total_work_hours'].total_seconds() / 3600
+            work_hours['total_work_hours'] = round(total_hours, 2)
+        else:
+            work_hours['total_work_hours'] = 0
+            
+        # Average daily work hours
+        if work_hours['present_days']:
+            work_hours['average_daily_hours'] = round(
+                work_hours['total_work_hours'] / work_hours['present_days'], 
+                2
+            )
+        else:
+            work_hours['average_daily_hours'] = 0
+            
+        return work_hours

@@ -12,9 +12,9 @@
                    class="nav-link d-flex align-items-center text-dark py-3 px-3">
                     <i class="bi bi-clock-history me-3"></i>
                     {% if not user.is_superuser %}
-                    Login/Logout Records
+                    My Records
                     {% else %}
-                    My Login/Logout Records
+                    All Employees Records
                     {% endif %}
                 </a>
                 {% if not user.is_superuser %}
@@ -28,15 +28,6 @@
                    class="nav-link d-flex align-items-center text-dark py-3 px-3">
                     <i class="bi bi-calendar-check me-3"></i>
                     All Leave Requests
-                </a>
-                {% endif %}
-                
-
-                {% if user.is_superuser %}
-                <a href="" 
-                   class="nav-link d-flex align-items-center text-dark py-3 px-3">
-                    <i class="bi bi-graph-up me-3"></i>
-                    Reports
                 </a>
                 {% endif %}
             </nav>
