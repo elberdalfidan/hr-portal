@@ -4,6 +4,8 @@ from django.utils import timezone
 from apps.attendance.models import Attendance, LeaveRequest
 from apps.notifications.models import Notification
 from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.models import User
+
 @login_required
 def dashboard_view(request):
     today = timezone.now().date()
@@ -51,3 +53,44 @@ def admin_leave_requests_view(request):
         'leave_requests': leave_requests,
     }
     return render(request, 'dashboard/admin_leave_requests.html', context)
+
+
+@login_required
+def attendance_records_view(request):
+    # Filter by date
+    year = request.GET.get('year', timezone.now().year)
+    month = request.GET.get('month', timezone.now().month)
+    
+    # User filter (only for admins)
+    selected_user_id = request.GET.get('user')
+    
+    # Base queryset
+    queryset = Attendance.objects.filter(
+        date__year=year,
+        date__month=month
+    )
+    
+    # Admin can see all records, employees can only see their own records
+    if not request.user.is_superuser:
+        queryset = queryset.filter(user=request.user)
+    elif selected_user_id:  # Admin can filter by user
+        queryset = queryset.filter(user_id=selected_user_id)
+    
+    # Sorting
+    attendance_records = queryset.select_related('user').order_by('-date')
+    
+    context = {
+        'attendance_records': attendance_records,
+        'current_year': int(year),
+        'current_month': int(month),
+        'months': [
+            (1, 'January'), (2, 'February'), (3, 'March'), (4, 'April'),
+            (5, 'May'), (6, 'June'), (7, 'July'), (8, 'August'),
+            (9, 'September'), (10, 'October'), (11, 'November'), (12, 'December')
+        ],
+        'years': range(timezone.now().year - 2, timezone.now().year + 1),
+        'is_admin': request.user.is_superuser,
+        'users': User.objects.filter(is_active=True).order_by('first_name', 'last_name') if request.user.is_superuser else None,
+        'selected_user_id': int(selected_user_id) if selected_user_id else None
+    }
+    return render(request, 'dashboard/login_logout_records.html', context)

@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="d-flex vh-100">
+    {% include 'dashboard/components/_sidebar.html' %}
+    <div class="flex-grow-1 d-flex flex-column overflow-hidden">
+        {% include 'dashboard/components/_topheader.html' %}
+        
+        <div class="container-fluid py-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Login/Logout Records</h2>
+                
+                <!-- Filters -->
+                <form class="row g-3 align-items-center" method="get">
+                    {% if is_admin %}
+                    <div class="col-auto">
+                        <select name="user" class="form-select" onchange="this.form.submit()">
+                            <option value="">All Employees</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}" {% if user.id == selected_user_id %}selected{% endif %}>
+                                {{ user.get_full_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                    <div class="col-auto">
+                        <select name="month" class="form-select" onchange="this.form.submit()">
+                            {% for month_num, month_name in months %}
+                            <option value="{{ month_num }}" {% if month_num == current_month %}selected{% endif %}>
+                                {{ month_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <select name="year" class="form-select" onchange="this.form.submit()">
+                            {% for year in years %}
+                            <option value="{{ year }}" {% if year == current_year %}selected{% endif %}>
+                                {{ year }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Kayıtlar Tablosu -->
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    {% if is_admin %}
+                                    <th>Employee</th>
+                                    {% endif %}
+                                    <th>Date</th>
+                                    <th>First Login</th>
+                                    <th>Last Logout</th>
+                                    <th>Late (minutes)</th>
+                                    <th>Deducted Leave</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in attendance_records %}
+                                <tr>
+                                    {% if is_admin %}
+                                    <td>{{ record.user.get_full_name }}</td>
+                                    {% endif %}
+                                    <td>{{ record.date|date:"d.m.Y" }}</td>
+                                    <td>{{ record.first_login|date:"H:i" }}</td>
+                                    <td>{{ record.last_logout|date:"H:i" }}</td>
+                                    <td>
+                                        {% if record.late_minutes > 0 %}
+                                            <span class="text-danger">{{ record.late_minutes }} minutes</span>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if record.deducted_leave > 0 %}
+                                            <span class="text-danger">{{ record.deducted_leave }} days</span>
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if not record.first_login %}
+                                            <span class="badge bg-danger">No Login</span>
+                                        {% elif not record.last_logout %}
+                                            <span class="badge bg-warning">No Logout</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="{% if is_admin %}7{% else %}6{% endif %}" class="text-center py-4">
+                                        No records found
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
