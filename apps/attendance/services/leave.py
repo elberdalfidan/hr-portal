@@ -2,13 +2,31 @@ from django.db.models import F
 from ..models import LeaveRequest
 from apps.notifications.services.notification import NotificationService
 from apps.accounts.models import Employee  # Import here to avoid circular import
+from datetime import timedelta
 
 class LeaveRequestService:
     @staticmethod
+    def _calculate_working_days(start_date, end_date):
+        """Calculate number of working days between two dates, excluding weekends"""
+        working_days = 0
+        current_date = start_date
+        
+        while current_date <= end_date:
+            # 5 = Saturday, 6 = Sunday
+            if current_date.weekday() < 5:
+                working_days += 1
+            current_date += timedelta(days=1)
+            
+        return working_days
+
+    @staticmethod
     def create_request(user, data):
         """Request leave"""
-        # Calculate the number of days
-        requested_days = (data['end_date'] - data['start_date']).days + 1
+        # Calculate the number of working days
+        requested_days = LeaveRequestService._calculate_working_days(
+            data['start_date'],
+            data['end_date']
+        )
         
         leave_request = LeaveRequest.objects.create(
             user=user,
@@ -16,7 +34,7 @@ class LeaveRequestService:
             end_date=data['end_date'],
             leave_type=data['leave_type'],
             reason=data['reason'],
-            requested_days=requested_days  # Add the calculated number of days
+            requested_days=requested_days  # Now contains only working days
         )
         
         # Send notification to admins
@@ -36,36 +54,33 @@ class LeaveRequestService:
         if leave_request.status != 'PENDING':
             raise ValueError("This request has already been processed")
 
-        # Update the leave request
-        leave_request.status = action
-        leave_request.approved_by = admin_user
-        leave_request.response_note = note
-        leave_request.save()
-        
-        # If approved and annual leave, deduct leave days
+        # If it's an annual leave approval, check leave balance first
         if action == 'APPROVED' and leave_request.leave_type == 'ANNUAL':
-            # Direct update with filter
-            updated = Employee.objects.filter(
-                user=leave_request.user,
-                remaining_leave_days__gte=leave_request.requested_days
+            employee = Employee.objects.get(user=leave_request.user)
+            if employee.remaining_leave_days < leave_request.requested_days:
+                raise ValueError(
+                    f"Insufficient leave days. Available: {employee.remaining_leave_days} days, Requested: {leave_request.requested_days} days"
+                )
+            
+            # Update leave balance
+            Employee.objects.filter(
+                user=leave_request.user
             ).update(
                 remaining_leave_days=F('remaining_leave_days') - leave_request.requested_days
             )
             
-            if not updated:
-                raise ValueError(
-                    f"Insufficient leave days. Requested: {leave_request.requested_days} days"
-                )
-            
-            # Get the current remaining leave days
-            employee = Employee.objects.get(user=leave_request.user)
-            
-            # Send low leave balance notification if remaining leave days are less than or equal to 3
-            if employee.remaining_leave_days <= 3:
+            # Check if balance is low after update
+            if (employee.remaining_leave_days - leave_request.requested_days) <= 3:
                 NotificationService.send_low_leave_balance_notification(
                     user=leave_request.user,
-                    remaining_days=employee.remaining_leave_days
+                    remaining_days=employee.remaining_leave_days - leave_request.requested_days
                 )
+
+        # Update the leave request after successful balance check
+        leave_request.status = action
+        leave_request.approved_by = admin_user
+        leave_request.response_note = note
+        leave_request.save()
         
         # Send notification to user
         NotificationService.send_leave_response_notification(

@@ -170,7 +170,7 @@ async function submitResponse() {
             window.location.reload();
         } else {
             const data = await response.json();
-            alert(data.message || 'An error occurred during the process');
+            alert(data.error || 'An error occurred during the process');
         }
     } catch (error) {
         console.error('Response error:', error);

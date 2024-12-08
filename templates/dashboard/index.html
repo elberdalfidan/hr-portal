@@ -1,6 +1,9 @@
 {% extends 'base.html' %}
 {% load static %}
-
+{% block extra_css %}
+<!-- Toastr CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+{% endblock %}
 {% block content %}
 <div class="d-flex vh-100">
     <!-- Sidebar -->
@@ -108,23 +111,87 @@
 {% endblock %}
 
 {% block extra_js %}
+<!-- jQuery ve Toastr JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
 <script>
-    // WebSocket bağlantısı
+    $(document).ready(function() {
+        toastr.options = {
+            "closeButton": true,
+            "progressBar": true,
+            "positionClass": "toast-top-right",
+            "timeOut": "5000",
+            "preventDuplicates": true
+        };
+    });
+
     const ws = new WebSocket(`ws://${window.location.host}/ws/notifications/`);
     
     ws.onmessage = function(e) {
         const data = JSON.parse(e.data);
-        // Bildirim sayısını güncelle
-        const badge = document.querySelector('.badge');
-        if (badge) {
-            const currentCount = parseInt(badge.textContent || '0');
-            badge.textContent = currentCount + 1;
+        
+        if (data.type === 'LEAVE_REQUEST') {
+            // Update notification count
+            const badge = document.querySelector('.badge.rounded-pill.bg-danger');
+            let notificationCount = parseInt(localStorage.getItem('notificationCount') || '0');
+            
+            // Increment notification count
+            notificationCount += 1;
+            localStorage.setItem('notificationCount', notificationCount);
+            
+            if (badge) {
+                badge.textContent = notificationCount;
+                badge.classList.remove('d-none');
+            } else {
+                const bellIcon = document.querySelector('.bi-bell');
+                if (bellIcon) {
+                    const newBadge = document.createElement('span');
+                    newBadge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger';
+                    newBadge.textContent = notificationCount;
+                    bellIcon.parentElement.appendChild(newBadge);
+                }
+            }
+            
+            // Show Toastr notification
+            toastr.info(data.message, 'New Leave Request');
+            
+            // Play notification sound
+            new Audio("{% static 'sounds/notification.mp3' %}").play();
+            
+            // Add new notification to the dropdown
+            const dropdownMenu = document.querySelector('.dropdown-menu');
+            if (dropdownMenu) {
+                // Remove empty notification if exists
+                const emptyNotification = dropdownMenu.querySelector('.dropdown-item p.small:contains("No notifications yet")');
+                if (emptyNotification) {
+                    emptyNotification.closest('.dropdown-item').remove();
+                }
+                
+                // Add new notification
+                const newNotification = document.createElement('div');
+                newNotification.className = 'dropdown-item py-2';
+                newNotification.innerHTML = `
+                    <p class="mb-0 small">${data.message}</p>
+                    <small class="text-muted">şimdi</small>
+                `;
+                
+                // Add to the top
+                dropdownMenu.insertBefore(newNotification, dropdownMenu.firstChild);
+            }
+        }
+    };
+
+    // Page loaded, check notification count from localStorage
+    document.addEventListener('DOMContentLoaded', function() {
+        const notificationCount = parseInt(localStorage.getItem('notificationCount') || '0');
+        const badge = document.querySelector('.badge.rounded-pill.bg-danger');
+        
+        if (notificationCount > 0 && badge) {
+            badge.textContent = notificationCount;
             badge.classList.remove('d-none');
         }
-        
-        // Bildirim sesi çal
-        new Audio("{% static 'sounds/notification.mp3' %}").play();
-    };
+    });
 
     ws.onerror = function(e) {
         console.error('WebSocket error:', e);
@@ -137,10 +204,6 @@
             ws = new WebSocket(`ws://${window.location.host}/ws/notifications/`);
         }, 5000);
     };
-
-
-
 </script>
-
 
 {% endblock %}
