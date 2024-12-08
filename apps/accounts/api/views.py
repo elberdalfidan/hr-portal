@@ -5,7 +5,6 @@ from rest_framework.permissions import AllowAny
 from django.contrib.auth import authenticate, login, logout
 from .serializers import UserLoginSerializer, UserSerializer
 from drf_spectacular.utils import extend_schema, OpenApiResponse
-from drf_spectacular.types import OpenApiTypes
 
 class StaffLoginAPIView(APIView):
     permission_classes = [AllowAny]

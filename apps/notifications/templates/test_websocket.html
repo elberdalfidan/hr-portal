@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h1>WebSocket Test</h1>
+    <div id="messages"></div>
+
+    <script>
+        const ws = new WebSocket('ws://localhost:8000/ws/test/');
+        
+        ws.onopen = function() {
+            console.log('WebSocket bağlantısı açıldı');
+            document.getElementById('messages').innerHTML += '<p>Bağlantı kuruldu!</p>';
+        };
+        
+        ws.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            document.getElementById('messages').innerHTML += `<p>Mesaj alındı: ${data.message}</p>`;
+        };
+        
+        ws.onerror = function(e) {
+            console.error('WebSocket hatası:', e);
+            document.getElementById('messages').innerHTML += '<p style="color: red;">Hata oluştu!</p>';
+        };
+        
+        ws.onclose = function() {
+            console.log('WebSocket bağlantısı kapandı');
+            document.getElementById('messages').innerHTML += '<p>Bağlantı kapandı!</p>';
+        };
+    </script>
+</body>
+</html>
