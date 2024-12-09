@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center bg-light">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6 text-center">
+           
+                <h1 class="mb-5 fw-bold text-primary">HR Management System</h1>
+                
+                <div class="d-grid gap-4 col-md-8 mx-auto">
+                    <a href="{% url 'accounts:staff_login' %}" class="btn btn-primary btn-lg p-3">
+                        <i class="bi bi-person-badge me-2"></i>
+                        Staff Login
+                    </a>
+                    
+                    <a href="{% url 'accounts:admin_login' %}" class="btn btn-dark btn-lg p-3">
+                        <i class="bi bi-shield-lock me-2"></i>
+                        Admin Login
+                    </a>
+                </div>
+                
+                <p class="mt-5 text-muted">
+                    <small>© {% now "Y" %} HR Management System. All rights reserved.</small>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_css %}
+<style>
+    .btn {
+        transition: all 0.3s ease;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    .btn-primary {
+        background-color: #4361ee;
+        border-color: #4361ee;
+    }
+    
+    .btn-primary:hover {
+        background-color: #3a53d3;
+        border-color: #3a53d3;
+    }
+    
+    .btn-dark {
+        background-color: #2b2d42;
+        border-color: #2b2d42;
+    }
+    
+    .btn-dark:hover {
+        background-color: #1a1b2e;
+        border-color: #1a1b2e;
+    }
+    
+    h1 {
+        color: #2b2d42;
+        font-size: 2.5rem;
+    }
+</style>
+{% endblock %}
+{% endblock %}
