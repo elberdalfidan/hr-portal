@@ -107,9 +107,29 @@ cp .env.example .env
 
 4. Run the development server:
 
+if you want to use pgsql in your local machine, you can use the following command:
+
+```bash
+cd docker/development
+docker compose -f docker-compose.pgsql.yml up --build -d
+```
+
+if you want to use redis in your local machine, you can use the following command:
+
+```bash
+cd docker/development
+docker compose -f docker-compose.redis.yml up --build -d
+```
+
 ```bash
 python manage.py runserver
 ```
+if you want to use notification service, use this instead of the above command:
+
+```bash
+python -m daphne core.asgi:application
+```
+
 4.1 Run migrations:
 
 ```bash
