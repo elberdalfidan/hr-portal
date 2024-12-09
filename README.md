@@ -59,17 +59,19 @@ A comprehensive HR management system built with Django and Docker, featuring rea
 - Health checks for services
 
 ## 🏗 Project Structure
-  hr-portal/
-  ├── apps/
-  │ ├── accounts/ # User management
-  │ ├── attendance/ # Attendance & leave tracking
-  │ ├── dashboard/ # Main interface views
-  │ └── notifications/ # Real-time notifications
-  ├── core/ # Project settings
-  ├── docker/ # Docker configurations
-  │ ├── development/
-  │ └── production/
-  └── templates/ # HTML templates
+```
+hr-portal/
+├── apps/
+│   ├── accounts/        # User management
+│   ├── attendance/      # Attendance & leave tracking
+│   ├── dashboard/       # Main interface views
+│   └── notifications/   # Real-time notifications
+├── core/               # Project settings
+├── docker/            # Docker configurations
+│   ├── development/
+│   └── production/
+└── templates/         # HTML templates
+```
 
 
 ## 🚀 Getting Started
